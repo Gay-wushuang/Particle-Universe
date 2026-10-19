@@ -247,7 +247,20 @@ return 4 * (np.sum(u) - shift)
 2. **jax-md `lennard_jones` 的 `jnp.nan_to_num` 语义**：源码 `energy.py` 中 `return jnp.nan_to_num(4ε(idr12−idr6))` 且带 TODO 注释 "This seems potentially dangerous"。在 r→0 时被置 0 而非 +∞。作为对照实现时需确认其是否影响近距离能量对照。
 3. **hoomd-examples 的截断/切换细节**：其 LJ 截断与切换由**外部 `hoomd` 包**决定，本仓库未含实现，故无法从本仓库给出其确切 `r_onset/r_cutoff` 数值（jax-md 引用了 HOOMD 文档作为来源）。
 4. **各项目"最小可用版本"**：未在本环境实际安装运行（本任务为只读审计），因此**性能/数值行为为文档与源码推断，非实测**。
-5. **对冲时间步长区间**：各项目默认 dt 不同（mdlj `dt=0.01`；hoomd 教程 `dt=0.005`；taichimd `dt=0.01`），无量纲化到 PU 基线后的具体安全区间需 P0 实测确定（见 `p0-test-matrix.md`）。
+5. **对冲时间步长区间**：各项目默认 dt 不同（mdlj `dt=0.01`；hoomd 教程 `dt=0.005`；taichimd `dt=0.01`），无量纲化到 PU 基线后的具体安全区间需 P0 实测确定（见 `p0-test-matrix.md`；PU-000G 已将 `dt=0.002 τ` 降级为**候选值**）。
+
+### 8.1 未决问题处置记录（PU-000G / Gate Corrections）
+
+> 本节仅记录**处置结论与交叉引用更新**，不修改本报告 §1–§7 的审计事实正文。
+
+| 未决项 | 处置 | 落点 |
+|--------|------|------|
+| jax-md `lennard_jones` 的 `jnp.nan_to_num`（`r→0` 置 0） | **PU 正式实现不采用该奇点口径**：`r→0` 必须保持 `U→+∞`，重叠由断言/报错处理 | `physics-baseline-proposal.md` §5.1；`implementation-handoff.md` §1.1 红线 8 |
+| mdlj-python 许可证（声明 MIT 但无 LICENSE 文件） | 维持**授权不明**结论：仅可读，**不得逐行复制** | `implementation-handoff.md` §1.1 红线 4 |
+| 测试编号过时（`M5`/`M8` 等） | 统一为 `M/N/C/R` 体系：`M5 → N1`、`M8 → R1`；本报告 §10 第 3 条已据此改写（交叉引用更新） | `p0-test-matrix.md` §0 |
+| Euler-Cromer 辛性表述（本报告 §3 定性表内"非严格辛"） | 该表述**不再作为 PU 基线依据**；PU 基线以 **Euler-Cromer 为辛** 为准，**非辛反例仅 Forward Euler** | `physics-baseline-proposal.md` §6.3；`p0-test-matrix.md` C5 |
+
+> **范围限制**：本报告 §3 定性表为审计记录，PU-000G 未授权改写其正文；上表以**处置记录**形式给出纠正，冲突一律以 `physics-baseline-proposal.md` §6.3 为准。
 
 ---
 
@@ -273,7 +286,7 @@ return 4 * (np.sum(u) - shift)
    → **jax-md**（Apache-2.0，有 tests，力由自动微分得到，截断公式明确；`testpaths=["tests"]` in `pyproject.toml`）。次要对照：mdlj-python（仅力/轨迹）。
 
 3. **哪些验证必须先于多粒子实验？**
-   → 先做**单体/二体解析对照**与**力=势能负梯度有限差分校验**（M1–M2），再做**能量/动量守恒**（M3–M4）与**时间步长收敛**（M5）。多粒子现象学（RDF、结晶等）必须置于其后。详见 `p0-test-matrix.md`。
+   → 顺序为：**数学正确性**（`M1–M3`：力=势能负梯度、二体解析、截断/平移口径）→ **数值标定**（`N1` 二阶收敛、`N3` 镜像合法性、`N5` 漂移诊断）→ **守恒门槛**（`C1–C3`：能量、动量、时间可逆）。多粒子现象学（RDF、结晶等）必须置于其后。详见 `p0-test-matrix.md`（测试 ID 已于 PU-000G 统一，历史 `M5`/`M8` 等编号作废）。
 
 4. **哪些性能优化可以推迟？**
    → 邻域列表 / 网格分箱、Taichi/Numba/GPU 加速、JAX/JIT 化、并行化 —— **全部推迟**（§5）。

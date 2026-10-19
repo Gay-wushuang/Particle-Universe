@@ -44,7 +44,7 @@
 | 维度 | 3 | 与三个代表实现一致（`taichimd/consts.py` `DIM=3`；mdlj README 3D 示例；jax-md LJ 默认 3D） |
 | 组分 | 单组分（monodisperse） | 与 mdlj-python / taichimd `lj` 示例一致 |
 | 质量 | 全部 `m=1` | 对应 `jax_md/simulate.py` 的 `mass=f32(1.0)` 默认 |
-| 粒子数 N | 小规模起步（建议 N ∈ {2, 108, 256}） | N=2 用于解析对照；N≥108 用于多体 |
+| 粒子数 N | 小规模起步，取 FCC 兼容值（4·cells³）：N ∈ {2, 108, 256, 500} | N=2 解析/可逆对照；N=108/256 多体（配 `rc=2.5`）；**N=500（FCC cells=5）用于 `rc≤3.5` 的敏感性测试**（见 §10、`p0-test-matrix.md` N2） |
 | 相互作用 | 仅成对 LJ（无键、无角、无外场） | 对应 tau: taichimd `lj` 示例仅 `nonbond`；`ClassicalFF` 的 bonded/bending/external 在 P0 **不使用** |
 
 **状态变量（最小集）：**
@@ -94,9 +94,8 @@ $$U_B(r) = S(r)\cdot U_{\text{LJ}}(r),\quad S(r)=\begin{cases}1 & r < r_{\text{o
 - 优点：**力连续**，NVE 能量守恒显著更优。
 - 证据（可复用，Apache-2.0）：`jax_md/energy.py` → `def multiplicative_isotropic_cutoff(fn, r_onset, r_cutoff)`，其 `smooth_fn` 为 `(r_c − r)²(r_c + 2r − 3r_o)/(r_c − r_o)³`（渲染行 579–588），且 docstring 明确"follow the approach outlined in HOOMD Blue"。
 
-> **推荐路径**：P0 v0 先实现**变体 A**（最简单、最易验证），在 `p0-test-matrix.md` 的 M5 时间步收敛中**实测其漂移**；随后以**变体 B** 作为对照，量化守恒改进。二者均以同一积分器与边界运行，保证可比。
-
-**待 Gate 决策**：是否将变体 A 定为 P0 唯一默认，或将变体 B 提前为默认。（见 §10 开放决策）
+> **已裁定（PU-000G）**：**变体 A 为 P0 默认**，也是 PU-001 唯一实现的势能变体；**变体 B 延至 PU-002** 作为守恒优化对照（届时以同一积分器、同一边界、同一初始态运行，保证可比）。
+> 能量漂移在 PU-001 中仅作**独立诊断**（`p0-test-matrix.md` **N5**）；**收敛阶由 N1 的位置/速度误差给出**，不得以"固定步数终点漂移"的拟合充当收敛阶。
 
 ---
 
@@ -116,6 +115,12 @@ $$\mathbf{F}_{ij} = 24\left(\frac{2}{r_{ij}^{14}} - \frac{1}{r_{ij}^{8}}\right)\
 **牛顿第三定律**：`F_ji = −F_ij`，仅计算每一无序对的力一次（mdlj-python 用上三角索引实现：`upperTri = np.triu_indices(par, 1)`，`mdsolver/potential.py`）。
 
 **P0 邻域策略**：**不做邻域搜索**，直接全对 O(N²) 计算（与 mdlj-python 一致：`calculateDistanceMatrix` 构造完整 N×N 位移矩阵）。邻域列表/网格分箱推迟（见 §11）。
+
+### 5.1 奇点（r→0）口径 —— PU 不采用 jax-md 的约定
+
+- jax-md 的 `lennard_jones` 以 `jnp.nan_to_num(...)` 包裹，在 `r=0` 时把能量置为 `0`，且源码自带 TODO 注释 "This seems potentially dangerous"（`github.com/jax-md/jax-md/blob/main/jax_md/energy.py` @ `a41c7d1`）。
+- **PU 正式实现不采用该口径**：物理上 `r→0` 时 `U→+∞` 必须保持。重叠只能通过**初始化最小间距约束 / 运行时断言 / 显式报错**处理，**不得**静默映射为 0（否则会掩盖未定义状态、污染守恒诊断）。
+- 对 `1/r⁶` 的数值处理须**显式、可审计**（在断言保护下计算），不得以"置零/截断"掩盖。
 
 ---
 
@@ -142,8 +147,8 @@ $$\begin{aligned}
 
 | 积分器 | 用途 | 证据 |
 |--------|------|------|
-| Forward Euler | 反例/教学对照（能量漂移） | `mdsolver/integrator.py` `class ForwardEuler` |
-| Euler-Cromer | 反例/教学对照 | `mdsolver/integrator.py` `class EulerCromer` |
+| Forward Euler | **非辛反例**（显式，能量单调漂移）——C5 的**唯一**反例 | `mdsolver/integrator.py` `class ForwardEuler` |
+| Euler-Cromer | **辛**（半隐式/辛欧拉，适用于可分哈密顿量）——**不得称为非辛**；仅作次要对照，**不作 C5 反例** | `mdsolver/integrator.py` `class EulerCromer` |
 | Nose–Hoover NVT | P0 **不使用**（非 NVE） | `taichimd/integrator.py` `class NVTIntegrator`；`jax_md/simulate.py` `nose_hoover_chain` |
 
 **P0 结论：默认且唯一的生产积分器 = Velocity-Verlet。** 依据见 `reference-audit.md` §3。
@@ -177,12 +182,17 @@ $$\mathbf{r}_{ij} \leftarrow \mathbf{r}_{ij} - \mathrm{round}\!\left(\frac{\math
 - 每分量 `v ∼ 𝒩(0, k_B T / m)`，`σ_v = √(T*)`。
 - **质心动量归零**：`v ← v − mean(v)`，消除整体漂移。
   > 证据：jax-md `initialize_momenta` 对多粒子做 `p = p - jnp.mean(p, axis=0, keepdims=True)`（`jax_md/simulate.py`）。
-- 温度换算：`KE = ½ Σ m|v|²`，`T_i = 2·KE / (d·N_eff·k_B)`，其中 `d=3`，`N_eff` 用 **3N−3** 自由度（扣除质心平动）。
-  > 对照：taichimd `NVTIntegrator.integrate_thermostat` 用 `2·ek − 3·N·T` 形式，即 DOF=3N（未扣质心）。
+- **温度换算（统一口径）**：`KE = ½ Σ m|v|²`，`k_B = 1`，且 **N>1**：
+
+  $$T^{*} = \frac{2\,KE}{3N - 3}$$
+
+  分母 `3N−3` 即**总自由度**（3N 减去 3 个质心平动自由度），其中**已含维度因子 3**。**不得**再乘维度 `d=3`——否则得到 `2KE/(9N−9)`，属**维度重复计数**。
+  > **N=1 边界**：无质心可扣，此时自由度 = 3，`T* = 2KE/3`；本方案的温度统计只用于 `N>1`（N=2 的 M2 亦满足）。
+  > **对照（PU 不采用）**：taichimd `NVTIntegrator.integrate_thermostat` 用 `2·ek − 3·N·T` 形式，即自由度取 `3N`、**未扣质心**（`taichimd/integrator.py` @ `57c02b9`）。
 
 ### 8.3 确定性
 
-- 所有随机数由**显式种子**驱动，记录 seed + 参数 + commit 以保证复现（见 `p0-test-matrix.md` M8）。
+- 所有随机数由**显式种子**驱动，记录 seed + 参数 + commit 以保证复现（见 `p0-test-matrix.md` **R1**）。
 
 ---
 
@@ -192,7 +202,7 @@ $$\mathbf{r}_{ij} \leftarrow \mathbf{r}_{ij} - \mathrm{round}\!\left(\frac{\math
 |----|------|----------|
 | 总能量 `E` | `KE + U`，其中 `KE=½Σ m|v|²`，`U=Σ_{i<j} U_{A/B}(r_ij)`（**含截断口径**） | NVE 下有界振荡，无长期漂移 |
 | 总动量 `P` | `Σ m·v` | 严格守恒（PBC + 对力）；机器精度内为常量 |
-| 温度 `T*` | `2·KE/(d·N_eff)`，`k_B=1` | 平衡后在初值附近涨落 |
+| 温度 `T*` | `2·KE/(3N−3)`，`k_B=1`，仅 `N>1`（见 §8.2） | 平衡后在初值附近涨落 |
 | 位力/压力 | P1 再议（P0 不强制） | — |
 
 > 对照：mdlj-python 的 `thermo` 输出 `poteng/kineng/temp`（`mdsolver/thermo.py`、`mdsolver/__init__.py` `thermo()`）；jax-md `quantity.kinetic_energy` / `quantity.temperature`（`jax_md/simulate.py`）。
@@ -210,18 +220,23 @@ $$\mathbf{r}_{ij} \leftarrow \mathbf{r}_{ij} - \mathrm{round}\!\left(\frac{\math
 | `dim` | 3 | 参考实现一致 |
 | `σ, ε, m, k_B` | 1 | 无量纲基线 |
 | `rc` | 2.5 σ | jax-md / taichimd 默认 |
-| 势能变体 | A（能量平移）起步，B 作对照 | §4.3 |
+| 势能变体 | **A（能量平移）为 P0 默认（已裁定）**；B 延至 PU-002 | §4.3 |
 | 积分器 | Velocity-Verlet | §6 |
-| `dt`（初值） | 0.002 τ | 介于各参考 0.005–0.01；需 M5 收敛确认 |
+| `dt`（**候选值**） | 0.002 τ（**仅候选**，非默认上限） | 介于各参考 0.005–0.01；须由 **N1** 收敛测试确认，安全上限未定 |
 | `ρ*` | 0.8 | LJ 液相典型稳定密度 |
 | `T*`（初值） | 1.0 | 常见 LJ 流体工况，避免低温结晶干扰 |
-| `N`（多体） | 256（另设 108 作为小样本核验） | 兼顾 O(N²) 成本与统计 |
-| 盒子 | `L = (N/ρ*)^{1/3}`，断言 `L/2 > rc` | §4.2 |
+| `N`（多体） | 守恒测试 N=256（FCC cells=4）；`rc≤3.5` 敏感性测试 **N=500（FCC cells=5）** | 兼顾 O(N²) 成本、统计与合法盒长 |
+| 盒子 | `L = (N/ρ*)^{1/3}`，断言 `L/2 > rc` | §4.2；见下方盒长核算 |
 
-**开放决策（需 Gate 裁定）：**
-1. 默认势能变体：A 还是 B？（影响守恒验收阈值）
-2. `dt` 默认值与安全上限（由 M5 实测后定）。
-3. 是否在 P0 即要求"变体 A/B 对照报告"，还是留到 PU-002。
+**盒长合法性核算（PU-000G）：**
+- `rc=2.5`、`N=256`、`ρ*=0.8`：`L = (256/0.8)^{1/3} = 6.840` → `L/2 = 3.420 > 2.5` ✓
+- `rc=3.5`、`N=500`、`ρ*=0.8`：`L = (500/0.8)^{1/3} = 8.550` → `L/2 = 4.275 > 3.5` ✓（FCC cells=5 → 4·5³ = 500）
+- 该断言须在初始化时执行；不满足即**拒绝运行**，不得静默继续。
+
+**决策状态（PU-000G 部分裁定）：**
+1. ✅ **已裁定**：P0 默认 **变体 A**；变体 B **延至 PU-002**。
+2. ⏳ **仍开放**：`dt` 的最终默认值与安全上限——须由 **N1**（位置/速度误差二阶收敛）与 **N5**（能量漂移诊断）确定；`dt=0.002 τ` **仅候选**。
+3. ✅ **已裁定**：变体 A/B 对照报告归入 **PU-002**。
 
 ---
 
@@ -249,10 +264,16 @@ $$\mathbf{r}_{ij} \leftarrow \mathbf{r}_{ij} - \mathrm{round}\!\left(\frac{\math
 | PBC + 最小镜像 | mdlj-python / jax-md | `mdsolver/boundary.py` `Periodic`；`jax_md/space.py` `periodic`/`periodic_shift` |
 | FCC 初始化 | mdlj-python | `mdsolver/initposition.py` `FCC` @ `0540ac5` |
 | 速度初始化 + 质心归零 | jax-md | `jax_md/simulate.py` `initialize_momenta` |
-| 温度口径 `2KE/(d·N)` | taichimd / jax-md | `taichimd/integrator.py` `NVTIntegrator`；`jax_md/simulate.py` `temperature` |
+| 温度口径 `2KE/(3N−3)`（`N>1`；PU 统一） | 自定（对照见 taichimd / jax-md） | 见 §8.2；对照 `taichimd/integrator.py` @ `57c02b9`（DOF=3N，未扣质心）与 `jax_md/simulate.py` @ `a41c7d1` |
 
 ---
 
-## 13. 本文件的验证责任
+## 13. 本文件的验证责任与修订记录
 
-本方案**尚未**被任何实测验证（本任务为只读审计）。所有数值阈值、`dt` 上限、守恒验收标准均由 `p0-test-matrix.md` 定义并在 PU-001/PU-002 中实测，**不得**在本阶段声称已通过。
+- 本方案**尚未**被任何实测验证（只读审计阶段）。所有数值阈值、`dt` 上限、守恒验收标准均由 `p0-test-matrix.md` 定义并在 PU-001/PU-002 中实测，**不得**在本阶段声称已通过。
+- **修订记录（PU-000G / Gate Corrections）**：
+  1. 温度口径统一为 `T* = 2KE/(3N−3)`（`N>1`），消除维度重复计数（§8.2、§9、§12）。
+  2. 裁定 **变体 A 为 P0 默认**，变体 B **延至 PU-002**；`dt=0.002 τ` 仅为**候选值**（§4.3、§10）。
+  3. 明确 **Euler-Cromer 为辛积分器**，非辛反例仅 Forward Euler（§6.3）。
+  4. 新增 **§5.1 奇点口径**：PU 不采用 jax-md 的 `jnp.nan_to_num` 约定。
+  5. 清理过时测试编号：`M5 → N1`、`M8 → R1`。
