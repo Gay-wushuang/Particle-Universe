@@ -1,7 +1,7 @@
 # PU-000 — 物理基线提议书（Physics Baseline Proposal）
 
 **阶段：** P0 — Unit Particle Universe
-**状态：** 待 Gate 审查（**不含实现**）
+**状态：** PU-000G3 已批准作为 PU-001 实施基线；**不代表 P0 Freeze 或任何测试已通过**
 **依赖：** `reference-audit.md`（证据锚定见该文 §0 commit 表）
 
 ---
@@ -214,7 +214,7 @@ $$\mathbf{r}_{ij} \leftarrow \mathbf{r}_{ij} - \mathrm{round}\!\left(\frac{\math
 
 ## 10. 默认参数与开放决策
 
-**建议默认值（待 Gate 确认）：**
+**PU-001 已批准参数与待实测候选值：**
 
 | 参数 | 建议值 | 依据 |
 |------|--------|------|
@@ -238,6 +238,7 @@ $$\mathbf{r}_{ij} \leftarrow \mathbf{r}_{ij} - \mathrm{round}\!\left(\frac{\math
 1. ✅ **已裁定**：P0 默认 **变体 A**；变体 B 为**唯一批准的势能扩展**，**延至 PU-002**，且不得改变变体 A 语义。
 2. ✅ **已解耦（PU-000G2）**：`dt` 的最终默认值与安全上限**不是开工前置条件**——PU-001 以候选 `dt=0.002 τ` 起步，经 **`N1a`**（光滑轨迹二阶收敛）与 **`N5`**（漂移诊断）标定后，于 PU-001 完成时**交 Gate 确认**。
 3. ✅ **已裁定**：变体 A/B 对照报告归入 **PU-002**。
+4. ✅ **已授权（PU-000G3）**：本文件作为 PU-001 实施基线；PU-002 未获本次授权，且所有测试仍为计划态。
 
 ---
 
@@ -284,3 +285,4 @@ $$\mathbf{r}_{ij} \leftarrow \mathbf{r}_{ij} - \mathrm{round}\!\left(\frac{\math
   3. **变体 B 定为唯一批准的势能扩展**，且不得改变变体 A 语义（互斥声明修正见 `implementation-handoff.md` §4）。
   4. §3 粒子数 N：FCC 兼容集 `{108,256,500}`（4·n³）与**非 FCC 特例 `N=2`** 分列。
   5. C1 阈值**保留不变**，但注明须**实测验证**并区分**积分误差**与**截断不连续误差**，失败**不得**擅自放宽。
+- **修订记录（PU-000G3 / Formal Gate Authorization）**：Gate 接受本基线用于 PU-001 实施；该授权不构成 P0 Freeze、测试通过或 PU-002 授权。详见 `pu-000-gate-approval.md`。

@@ -207,7 +207,7 @@ return 4 * (np.sum(u) - shift)
 | mdlj-python | setup.py 声明 **MIT**，但**仓库内无 LICENSE 文件**（GitHub license API 返回 `license: null`；`blob/master/LICENSE` 返回 404） | **法律状态不明确**：仅元数据声明，缺少许可文本与版权归属文件 | **中–高**：作为参照可读，但**不建议逐行复制其代码**进入正式基线 |
 | taichimd | **GPL-3.0** | ⚠️ **不可复制实现**：copyleft 会传染至衍生作品 | **高**：与用户"不复制 GPL 项目实现"的红线完全冲突 |
 
-> **注**：`evenmn/mdlj-python` 的许可证结论为"元数据声明 MIT 但无 LICENSE 文件"。这是"声明"而非"已确认的法律事实"，需在 Gate 复核时二次确认（见 §8 未决问题）。
+> **注**：`evenmn/mdlj-python` 的许可证结论为"元数据声明 MIT 但无 LICENSE 文件"。这是"声明"而非"已确认的法律事实"；PU-000G3 已采纳 §8.1 的保守处置，维持**仅可读、不得复制**（见 §8 与 `pu-000-gate-approval.md`）。
 
 ### 6.2 依赖与兼容性风险
 
@@ -241,7 +241,7 @@ return 4 * (np.sum(u) - shift)
 
 ---
 
-## 8. 尚未确认的问题（需 Gate 复核）
+## 8. 尚未确认的问题与 Gate 保守处置
 
 1. **mdlj-python 许可证**：`setup.py` 声明 MIT 但仓库内无 LICENSE 文本。需确认上游是否存在其他许可声明（如 README/issue），或**默认按"不可复制、仅可读"处理**。
 2. **jax-md `lennard_jones` 的 `jnp.nan_to_num` 语义**：源码 `energy.py` 中 `return jnp.nan_to_num(4ε(idr12−idr6))` 且带 TODO 注释 "This seems potentially dangerous"。在 r→0 时被置 0 而非 +∞。作为对照实现时需确认其是否影响近距离能量对照。
@@ -249,7 +249,7 @@ return 4 * (np.sum(u) - shift)
 4. **各项目"最小可用版本"**：未在本环境实际安装运行（本任务为只读审计），因此**性能/数值行为为文档与源码推断，非实测**。
 5. **对冲时间步长区间**：各项目默认 dt 不同（mdlj `dt=0.01`；hoomd 教程 `dt=0.005`；taichimd `dt=0.01`），无量纲化到 PU 基线后的具体安全区间需 P0 实测确定（见 `p0-test-matrix.md`；PU-000G 已将 `dt=0.002 τ` 降级为**候选值**）。
 
-### 8.1 未决问题处置记录（PU-000G / Gate Corrections）
+### 8.1 未决问题处置记录（PU-000G / G2 / G3）
 
 > 本节仅记录**处置结论与交叉引用更新**，不修改本报告 §1–§7 的审计事实正文。
 
@@ -262,6 +262,8 @@ return 4 * (np.sum(u) - shift)
 | 同上（**PU-000G2 已直接修订该单元格**） | 本报告 **§3 定性表该单元格已直接更正**为"辛（半隐式/辛欧拉，适用于可分哈密顿量）"；本条目转为**历史记录** | 本文件 §3 |
 
 > **范围限制（PU-000G2 更新）**：PU-000G 下 §3 正文不可改，故曾以处置记录代纠正；**PU-000G2 已授权并完成对 §3 表内 Euler-Cromer 单元格的直接修订**，该项冲突已消除。§8.1 其余条目仍为处置记录。
+
+> **Gate 状态（PU-000G3）**：Gate 已采纳本节保守处置并据此授权 PU-001 开工。该裁定不消除第三方许可证、兼容性、性能或未实测数值行为的不确定性；这些事实与风险继续保留。正式记录见 `pu-000-gate-approval.md`。
 
 ---
 
@@ -299,6 +301,6 @@ return 4 * (np.sum(u) - shift)
 
 ## 11. 下一步建议
 
-- **Gate 复核**：确认 §8 的 5 项未决问题（尤其 mdlj-python 许可证与 jax-md 对照口径）。
-- 通过后，按 `implementation-handoff.md` 启动 **PU-001**（最小 NVE 求解器）与 **PU-002**（验证），并以 `p0-test-matrix.md` 为准绳。
-- **不进入实现阶段**，等待最终 Gate 审查。
+- **Gate 复核已完成（PU-000G3）**：§8.1 的保守处置已采纳；第三方未验证事实与风险继续保留。
+- 可按 `implementation-handoff.md` §2 启动 **PU-001**（最小 NVE 求解器），并以 `p0-test-matrix.md` 为准绳。
+- **PU-002 未获本次授权**；其实现与加速前置评估须另行裁定。
