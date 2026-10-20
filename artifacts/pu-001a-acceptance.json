@@ -1,0 +1,91 @@
+{
+  "task": "PU-001A",
+  "scope": [
+    "M1",
+    "M2",
+    "M3",
+    "N3",
+    "N4",
+    "R1"
+  ],
+  "explicitly_not_executed": [
+    "N1a",
+    "N1b",
+    "N5",
+    "C1",
+    "C2",
+    "C3",
+    "C4",
+    "C5"
+  ],
+  "solver_commit": "61ed1169d4cadfddf48ad9aeba23d0bf6d138b2c",
+  "solver_tree": "d95282bf9639761cd4205039d8728fd53fad4333",
+  "command": "python scripts/run_pu001a_acceptance.py --output artifacts/pu-001a-acceptance.json",
+  "executed_at": "2026-10-20T09:16:27.418389+08:00",
+  "environment": {
+    "python": "3.12.5",
+    "numpy": "2.2.6",
+    "platform": "Windows-10-10.0.19045-SP0"
+  },
+  "results": {
+    "M1": {
+      "id": "M1",
+      "threshold": "relative error < 1e-6 at h=1e-5; stable as h decreases",
+      "maximum_relative_error_by_h": {
+        "1e-04": 6.724984774333416e-07,
+        "1e-05": 6.7286589186782485e-09,
+        "1e-06": 1.222792328272439e-10
+      },
+      "configurations": 4,
+      "passed": true
+    },
+    "M2": {
+      "id": "M2",
+      "threshold": "relative error < 1e-12",
+      "relative_error_by_separation": {
+        "0.9": 4.0994932211235687e-16,
+        "1.12": 1.6771327826885905e-14,
+        "1.5": 0.0,
+        "2.0": 0.0,
+        "2.4": 1.3400678379203662e-16
+      },
+      "maximum_relative_error": 1.6771327826885905e-14,
+      "passed": true
+    },
+    "M3": {
+      "id": "M3",
+      "threshold": "absolute error < 1e-12 and shift uses N_pairs",
+      "interacting_pairs": 2,
+      "expected_interacting_pairs": 2,
+      "absolute_error": 5.551115123125783e-17,
+      "distance_from_incorrect_N_shift": 0.03263378227199992,
+      "passed": true
+    },
+    "N3": {
+      "id": "N3",
+      "threshold": "L/2 <= rc rejected; legal minimum image is correct",
+      "equality_rejected": true,
+      "below_rejected": true,
+      "mapping_max_absolute_error": 1.6653345369377348e-16,
+      "passed": true
+    },
+    "N4": {
+      "id": "N4",
+      "threshold": "one initial evaluation and exactly one evaluation per step",
+      "steps": 7,
+      "initial_force_evaluations": 1,
+      "step_force_evaluations": 7,
+      "passed": true
+    },
+    "R1": {
+      "id": "R1",
+      "threshold": "trajectory and energy sequence bit-identical",
+      "positions_bit_identical": true,
+      "velocities_bit_identical": true,
+      "energy_bit_identical": true,
+      "samples": 6,
+      "passed": true
+    }
+  },
+  "overall_passed": true
+}
