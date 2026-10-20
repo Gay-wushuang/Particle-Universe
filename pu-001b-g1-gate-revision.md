@@ -155,7 +155,7 @@
 
 - **本修订提交 SHA：** `78e15c6`（"docs: version C4 contract and close PU-001B-G1 authorizations"；4 files changed, 345 insertions(+), 18 deletions(-)）。
 - **Diff 摘要：** 改动仅限 Markdown —— `p0-test-matrix.md`（+146/-…）、`implementation-handoff.md`、`physics-baseline-proposal.md`（新增 §9.1）、新增本文件 `pu-001b-g1-gate-revision.md`。**无 Python 源码、无 `artifacts/`、无 `PU-001A.md`/`PU-001B.md` 改动。**
-- **记录提交 SHA：** 待回填（本 SHA 由紧随其后的记录提交写入，见 Gate 报告）。
+- **记录提交 SHA：** 紧随其后的记录提交 "docs: record PU-001B-G1 revision commit SHA"（起点 `912c0e4` 之后的第二个提交）写入本 SHA；完整 SHA 见 Gate 报告。此后无需再回填。
 
 ---
 
