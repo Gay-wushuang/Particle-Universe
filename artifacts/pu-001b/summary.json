@@ -1,0 +1,306 @@
+{
+  "task": "PU-001B",
+  "solver_commit": "b219f95e8b55017f08e073f9981274e3834827e7",
+  "solver_tree": "58ae4e1f49409c2aea068ff1dd986afd0dd50c51",
+  "authorized_baseline": "ed4faad4bd571f2a5ba8c7fabe2a45961792d326",
+  "command": "python scripts/run_pu001b_validation.py --output-dir artifacts/pu-001b --phase full",
+  "executed_at": "2026-10-20T11:21:31.745146+08:00",
+  "environment": {
+    "python": "3.12.5",
+    "numpy": "2.2.6",
+    "platform": "Windows-10-10.0.19045-SP0"
+  },
+  "frozen_constants": {
+    "mass": 1.0,
+    "sigma": 1.0,
+    "epsilon": 1.0,
+    "k_B": 1.0,
+    "rc": 2.5,
+    "potential_variant": "A"
+  },
+  "results": {
+    "N1a": {
+      "id": "N1a",
+      "outcome": "PASS",
+      "threshold": {
+        "position_slope": "2.0 +/- 0.3",
+        "velocity_slope": "2.0 +/- 0.3",
+        "reference_halving_max_rms": "< 1e-10",
+        "crossing_count": 0,
+        "errors_monotonic_with_dt": true
+      },
+      "parameters": {
+        "N": 2,
+        "boundary": "free",
+        "initial_separation": 1.2,
+        "initial_velocities": [
+          [
+            -0.02,
+            0.0,
+            0.0
+          ],
+          [
+            0.02,
+            0.0,
+            0.0
+          ]
+        ],
+        "seed": 20261020,
+        "t_end": 0.08,
+        "dt_values": [
+          0.001,
+          0.002,
+          0.004,
+          0.008
+        ],
+        "dt_ref": 1e-05,
+        "dt_ref_half": 5e-06
+      },
+      "measured": {
+        "position_errors": [
+          4.4304190474155505e-09,
+          1.7720822586525718e-08,
+          7.086475869059544e-08,
+          2.831576711910107e-07
+        ],
+        "velocity_errors": [
+          2.1573776530531307e-07,
+          8.629571217586523e-07,
+          3.4516828323220774e-06,
+          1.3804155904817595e-05
+        ],
+        "position_slope": 1.9993678705097677,
+        "velocity_slope": 1.999897947472152,
+        "position_errors_monotonic": true,
+        "velocity_errors_monotonic": true,
+        "crossing_counts": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "reference_position_rms": 3.3421091489346343e-13,
+        "reference_velocity_rms": 1.6184006511763244e-11,
+        "reference_converged": true
+      },
+      "duration_seconds": 2.7761295000091195,
+      "raw_data": "n1a_raw.npz"
+    },
+    "N1b": {
+      "id": "N1b",
+      "outcome": "PASS",
+      "threshold": "diagnostic only; record crossings, errors, and observed slopes",
+      "parameters": {
+        "N": 256,
+        "rho_star": 0.8,
+        "initial_temperature": 1.0,
+        "seed": 20261020,
+        "boundary": "periodic",
+        "L": 6.839903786706787,
+        "t_end": 0.08,
+        "dt_values": [
+          0.001,
+          0.002,
+          0.004,
+          0.008
+        ],
+        "dt_ref": 1e-05,
+        "dt_ref_half": 5e-06
+      },
+      "measured": {
+        "position_errors": [
+          1.1293414025543585e-06,
+          4.252407119056549e-06,
+          1.691012052429023e-05,
+          6.787688441189867e-05
+        ],
+        "velocity_errors": [
+          4.6399141027980446e-05,
+          0.00018172918475874476,
+          0.00072307753141731,
+          0.002897568006606734
+        ],
+        "observed_position_slope": 1.9719635588169522,
+        "observed_velocity_slope": 1.9886162062841681,
+        "crossing_counts": [
+          474,
+          474,
+          474,
+          476
+        ],
+        "reference_crossing_count": 474,
+        "reference_half_crossing_count": 474,
+        "reference_halving_position_rms": 3.375949959771554e-09,
+        "reference_halving_velocity_rms": 1.0271140726855543e-07,
+        "reference_accuracy_caveat": "The reference itself crosses the discontinuous cutoff; halving is reported but is weaker evidence than in N1a."
+      },
+      "duration_seconds": 136.7739964001812,
+      "raw_data": "n1b_raw.npz"
+    },
+    "N5": {
+      "id": "N5",
+      "outcome": "PASS",
+      "threshold": "diagnostic only; C1 threshold is reported without fitting convergence order",
+      "parameters": {
+        "N": 256,
+        "rho_star": 0.8,
+        "initial_temperature": 1.0,
+        "seed": 20261020,
+        "dt": 0.002,
+        "steps": 10000,
+        "t_end": 20.0,
+        "L": 6.839903786706787,
+        "boundary": "periodic",
+        "potential_variant": "A"
+      },
+      "measured": {
+        "short_first_1000_step_max_relative_change": 2.6053662011427027e-05,
+        "long_max_relative_change": 2.6053662011427027e-05,
+        "linear_relative_drift_per_tau": -2.853561382272957e-07,
+        "linear_trend_over_run": -5.707122764545914e-06,
+        "total_cutoff_crossings": 112896,
+        "steps_with_crossings": 9991,
+        "mean_absolute_energy_step_on_crossing": 0.00034194415174572894,
+        "mean_absolute_energy_step_without_crossing": 0.000429068346698437,
+        "note": "Energy convergence order is not inferred from this series."
+      },
+      "duration_seconds": 65.37918649986386,
+      "raw_data": "nve_long_raw.npz"
+    },
+    "C1": {
+      "id": "C1",
+      "outcome": "PASS",
+      "threshold": "max |E(t)-E0|/|E0| < 1e-4 and no monotonic drift",
+      "parameters": {
+        "N": 256,
+        "rho_star": 0.8,
+        "initial_temperature": 1.0,
+        "seed": 20261020,
+        "dt": 0.002,
+        "steps": 10000,
+        "t_end": 20.0,
+        "L": 6.839903786706787,
+        "boundary": "periodic",
+        "potential_variant": "A"
+      },
+      "measured": {
+        "initial_energy": -1103.8117777522011,
+        "maximum_relative_energy_change": 2.6053662011427027e-05,
+        "linear_relative_drift_per_tau": -2.853561382272957e-07,
+        "linear_trend_over_run": -5.707122764545914e-06,
+        "strictly_monotonic": false,
+        "first_10_percent_mean_relative_change": -4.030073649713587e-06,
+        "last_10_percent_mean_relative_change": -1.0244171934813672e-05
+      },
+      "duration_seconds": 65.37918649986386,
+      "raw_data": "nve_long_raw.npz"
+    },
+    "C2": {
+      "id": "C2",
+      "outcome": "PASS",
+      "threshold": "|P(t)-P(0)| < 1.6e-11",
+      "parameters": {
+        "N": 256,
+        "rho_star": 0.8,
+        "initial_temperature": 1.0,
+        "seed": 20261020,
+        "dt": 0.002,
+        "steps": 10000,
+        "t_end": 20.0,
+        "L": 6.839903786706787,
+        "boundary": "periodic",
+        "potential_variant": "A"
+      },
+      "measured": {
+        "initial_momentum": [
+          9.992007221626409e-15,
+          -2.19824158875781e-14,
+          -7.771561172376096e-15
+        ],
+        "maximum_momentum_drift": 2.3717003589841436e-13
+      },
+      "duration_seconds": 65.37918649986386,
+      "raw_data": "nve_long_raw.npz"
+    },
+    "C3": {
+      "id": "C3",
+      "outcome": "PASS",
+      "threshold": {
+        "position_rms": "< 1e-10 using minimum-image difference",
+        "velocity_rms": "< 1e-10 against -v0",
+        "net_displacement": "< L/2"
+      },
+      "parameters": {
+        "N": 2,
+        "seed": 20261020,
+        "dt": 0.002,
+        "steps_each_way": 200,
+        "T_short": 0.4,
+        "L": 6.0,
+        "initial_separation": 1.2
+      },
+      "measured": {
+        "position_rms": 0.0,
+        "velocity_rms": 9.514659125335341e-18,
+        "maximum_forward_unwrapped_component_displacement": 0.06549655602751159,
+        "net_displacement_valid": true
+      },
+      "duration_seconds": 0.11573520000092685,
+      "raw_data": "c3_raw.npz"
+    },
+    "C4": {
+      "id": "C4",
+      "outcome": "FAIL",
+      "threshold": "bounded/stationary energy variance with O(dt^2) magnitude",
+      "analysis_interpretation": "O(dt^2) is evaluated with the same 2.0 +/- 0.3 slope band used for N1a; half-segment mean shifts are reported without a new threshold.",
+      "parameters": {
+        "N": 256,
+        "rho_star": 0.8,
+        "initial_temperature": 1.0,
+        "seed": 20261020,
+        "dt_values": [
+          0.001,
+          0.002,
+          0.004
+        ],
+        "t_end": 20.0,
+        "analysis_segment": "second half of each trajectory",
+        "L": 6.839903786706787
+      },
+      "measured": {
+        "relative_standard_deviation": [
+          2.046775297246349e-06,
+          3.1225070632813882e-06,
+          1.0567234634669637e-05
+        ],
+        "half_mean_relative_shifts": [
+          3.373252337658066e-06,
+          2.1452655150981203e-06,
+          2.5608706561507753e-07
+        ],
+        "observed_scaling_slope": 1.1840866260516132,
+        "bounded_finite": true,
+        "scaling_consistent": false
+      },
+      "per_run_duration_seconds": {
+        "0.001": 82.58808730007149,
+        "0.002": 65.37918649986386,
+        "0.004": 20.593975299969316
+      },
+      "duration_seconds": 103.22782720020041,
+      "raw_data": "c4_raw.npz"
+    }
+  },
+  "gate_decision": "STOPPED_ON_C4_FAILURE",
+  "raw_data_sha256": {
+    "c3_raw.npz": "5a09f900299e5ce691d6bc4b8afede715502fa4c5b0a59d68f58341063afa3ef",
+    "c4_raw.npz": "2beabd4b8b8a5b972f2591fffd0f12d6c93d6724eff92e048d508388f3808ccb",
+    "n1a_raw.npz": "76c415505071d753cf78aa8ed132fe4638e57dafc2ca4673f1c4360ad159c02b",
+    "n1b_raw.npz": "4fcf4868e0e11859cd324245f94d708e90904e7d4841944230da6392409f09d2",
+    "nve_long_raw.npz": "f44f93324b38f70f8f4f4c1a34dea03346917837266e9f0f8683764716371f16"
+  },
+  "not_executed_due_to_gate": [
+    "C5"
+  ],
+  "total_duration_seconds": 308.40629670000635
+}
