@@ -687,8 +687,12 @@ def run_forward_euler_series(
         kinetic_energy=kinetic_energy(velocities),
     )
     time_values = np.empty(steps + 1, dtype=np.float64)
+    potential_values = np.empty(steps + 1, dtype=np.float64)
+    kinetic_values = np.empty(steps + 1, dtype=np.float64)
     energy_values = np.empty(steps + 1, dtype=np.float64)
     time_values[0] = 0.0
+    potential_values[0] = state.potential_energy
+    kinetic_values[0] = state.kinetic_energy
     energy_values[0] = state.potential_energy + state.kinetic_energy
     completed = 0
     failure: str | None = None
@@ -712,16 +716,117 @@ def run_forward_euler_series(
             break
         completed = index
         time_values[index] = index * dt
+        potential_values[index] = state.potential_energy
+        kinetic_values[index] = state.kinetic_energy
         energy_values[index] = state.potential_energy + state.kinetic_energy
     duration = perf_counter() - started
     return (
         {
             "time": time_values[: completed + 1],
+            "potential_energy": potential_values[: completed + 1],
+            "kinetic_energy": kinetic_values[: completed + 1],
             "total_energy": energy_values[: completed + 1],
         },
         failure,
         duration,
     )
+
+
+def run_c5_independent(output_directory: Path) -> dict[str, Any]:
+    """Collect C5 evidence without applying the historical C4 gate."""
+
+    started = perf_counter()
+    positions, velocities, boundary, box_length = multibody_initial_state()
+    requested_steps = 10_000
+    velocity_verlet = run_velocity_verlet_series(
+        positions.copy(),
+        velocities.copy(),
+        boundary,
+        dt=DT_CANDIDATE,
+        steps=requested_steps,
+        track_crossings=False,
+    )
+    forward_euler, failure, forward_euler_duration = run_forward_euler_series(
+        positions.copy(),
+        velocities.copy(),
+        boundary,
+        dt=DT_CANDIDATE,
+        steps=requested_steps,
+    )
+
+    vv_energy = np.asarray(velocity_verlet["total_energy"])
+    fe_energy = np.asarray(forward_euler["total_energy"])
+    vv_relative = (vv_energy - vv_energy[0]) / abs(vv_energy[0])
+    fe_relative = (fe_energy - fe_energy[0]) / abs(fe_energy[0])
+    vv_maximum = float(np.max(np.abs(vv_relative)))
+    fe_maximum = float(np.max(np.abs(fe_relative)))
+    ratio = None if vv_maximum == 0.0 else fe_maximum / vv_maximum
+    orders = None if ratio is None else math.log10(ratio)
+    completed_steps = int(fe_energy.size - 1)
+
+    raw_path = output_directory / "c5_independent_raw.npz"
+    np.savez_compressed(
+        raw_path,
+        initial_positions=positions,
+        initial_velocities=velocities,
+        vv_time=velocity_verlet["time"],
+        vv_potential_energy=velocity_verlet["potential_energy"],
+        vv_kinetic_energy=velocity_verlet["kinetic_energy"],
+        vv_total_energy=vv_energy,
+        vv_relative_energy_change=vv_relative,
+        fe_time=forward_euler["time"],
+        fe_potential_energy=forward_euler["potential_energy"],
+        fe_kinetic_energy=forward_euler["kinetic_energy"],
+        fe_total_energy=fe_energy,
+        fe_relative_energy_change=fe_relative,
+    )
+    return {
+        "id": "C5-independent",
+        "outcome": "EVIDENCE_COLLECTED",
+        "formal_gate_result": "NOT_EVALUATED",
+        "criterion_status": (
+            "ratio >= 100 is reported as an unapproved prospective proposal, "
+            "not as a PASS threshold"
+        ),
+        "parameters": {
+            "N": MULTIBODY_PARTICLES,
+            "rho_star": MULTIBODY_DENSITY,
+            "initial_temperature": MULTIBODY_TEMPERATURE,
+            "seed": SEED,
+            "boundary": "periodic",
+            "L": box_length,
+            "dt": DT_CANDIDATE,
+            "requested_steps": requested_steps,
+            "t_end": requested_steps * DT_CANDIDATE,
+            "mass": 1.0,
+            "potential": "energy-shifted Lennard-Jones variant A, rc=2.5",
+            "integrators": ["Velocity-Verlet", "Forward Euler teaching control"],
+        },
+        "measured": {
+            "velocity_verlet_completed_steps": requested_steps,
+            "forward_euler_completed_steps": completed_steps,
+            "forward_euler_failure_time": (
+                None if failure is None else (completed_steps + 1) * DT_CANDIDATE
+            ),
+            "forward_euler_numerical_failure": failure,
+            "velocity_verlet_maximum_relative_energy_change": vv_maximum,
+            "forward_euler_maximum_relative_energy_change": fe_maximum,
+            "drift_ratio": ratio,
+            "orders_of_magnitude_ratio": orders,
+            "prospective_ratio_100_reached": (
+                None if ratio is None else bool(ratio >= 100.0)
+            ),
+            "all_archived_values_finite": bool(
+                np.all(np.isfinite(vv_energy)) and np.all(np.isfinite(fe_energy))
+            ),
+        },
+        "duration_seconds": perf_counter() - started,
+        "velocity_verlet_run_duration_seconds": float(
+            velocity_verlet["duration_seconds"]
+        ),
+        "forward_euler_run_duration_seconds": forward_euler_duration,
+        "raw_data": raw_path.name,
+    }
 
 
 def run_c5(output_directory: Path, c1_maximum_drift: float) -> dict[str, Any]:
@@ -810,7 +915,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument(
-        "--phase", choices=("n1a", "full"), default="full"
+        "--phase", choices=("n1a", "c5", "full"), default="full"
     )
     arguments = parser.parse_args()
     arguments.output_dir.mkdir(parents=True, exist_ok=True)
@@ -842,6 +947,20 @@ def main() -> None:
         "gate_decision": "INCOMPLETE",
     }
     overall_started = perf_counter()
+
+    if arguments.phase == "c5":
+        summary["task"] = "PU-001B-R1"
+        summary["review_baseline"] = (
+            "02687c694b1e72f30534b2118becfc457bcb48be"
+        )
+        summary["historical_numerical_baseline"] = (
+            "912c0e46e8d00dc285c34258b1113f3a8ea61042"
+        )
+        summary["results"]["C5"] = run_c5_independent(arguments.output_dir)
+        summary["gate_decision"] = "EVIDENCE_ONLY_NO_FORMAL_C5_DECISION"
+        summary["total_duration_seconds"] = perf_counter() - overall_started
+        write_summary(arguments.output_dir, summary)
+        return
 
     n1a = run_n1a(arguments.output_dir)
     summary["results"]["N1a"] = n1a

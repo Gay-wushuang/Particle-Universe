@@ -11,6 +11,7 @@ from scripts.run_pu001b_validation import (
     log_log_slope,
     pair_active_mask,
     pbc_position_rms,
+    run_forward_euler_series,
     velocity_rms,
 )
 
@@ -40,6 +41,20 @@ class PU001BProtocolTests(unittest.TestCase):
         dt = np.array([0.001, 0.002, 0.004, 0.008])
         error = 3.0 * dt**2
         self.assertAlmostEqual(log_log_slope(dt, error), 2.0, places=13)
+
+    def test_forward_euler_series_archives_energy_components(self) -> None:
+        positions = np.array([[2.4, 3.0, 3.0], [3.6, 3.0, 3.0]])
+        velocities = np.zeros((2, 3), dtype=np.float64)
+        series, failure, _ = run_forward_euler_series(
+            positions, velocities, PeriodicBoundary(6.0), dt=0.001, steps=2
+        )
+        self.assertIsNone(failure)
+        self.assertEqual(series["time"].shape, (3,))
+        np.testing.assert_array_equal(
+            series["total_energy"],
+            series["potential_energy"] + series["kinetic_energy"],
+        )
+        self.assertTrue(np.all(np.isfinite(series["total_energy"])))
 
 
 if __name__ == "__main__":
