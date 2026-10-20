@@ -1,0 +1,69 @@
+{
+  "task": "PU-001B-R1",
+  "solver_commit": "8520100f0bd8ecf7a3ae811e5f3e720f5066206f",
+  "solver_tree": "f0ca16574f0a348f6ff48d86efc3026e2a8f7df7",
+  "authorized_baseline": "ed4faad4bd571f2a5ba8c7fabe2a45961792d326",
+  "command": "python scripts/run_pu001b_validation.py --output-dir artifacts/pu-001b-r1 --phase c5",
+  "executed_at": "2026-10-20T19:21:49.174823+08:00",
+  "environment": {
+    "python": "3.12.5",
+    "numpy": "2.2.6",
+    "platform": "Windows-10-10.0.19045-SP0"
+  },
+  "frozen_constants": {
+    "mass": 1.0,
+    "sigma": 1.0,
+    "epsilon": 1.0,
+    "k_B": 1.0,
+    "rc": 2.5,
+    "potential_variant": "A"
+  },
+  "results": {
+    "C5": {
+      "id": "C5-independent",
+      "outcome": "EVIDENCE_COLLECTED",
+      "formal_gate_result": "NOT_EVALUATED",
+      "criterion_status": "ratio >= 100 is reported as an unapproved prospective proposal, not as a PASS threshold",
+      "parameters": {
+        "N": 256,
+        "rho_star": 0.8,
+        "initial_temperature": 1.0,
+        "seed": 20261020,
+        "boundary": "periodic",
+        "L": 6.839903786706787,
+        "dt": 0.002,
+        "requested_steps": 10000,
+        "t_end": 20.0,
+        "mass": 1.0,
+        "potential": "energy-shifted Lennard-Jones variant A, rc=2.5",
+        "integrators": [
+          "Velocity-Verlet",
+          "Forward Euler teaching control"
+        ]
+      },
+      "measured": {
+        "velocity_verlet_completed_steps": 10000,
+        "forward_euler_completed_steps": 10000,
+        "forward_euler_failure_time": null,
+        "forward_euler_numerical_failure": null,
+        "velocity_verlet_maximum_relative_energy_change": 2.6053662011427027e-05,
+        "forward_euler_maximum_relative_energy_change": 3.7026177020790883e+50,
+        "drift_ratio": 1.4211505854551793e+55,
+        "orders_of_magnitude_ratio": 55.152640098312624,
+        "prospective_ratio_100_reached": true,
+        "all_archived_values_finite": true
+      },
+      "duration_seconds": 100.63406120007858,
+      "velocity_verlet_run_duration_seconds": 45.72053769999184,
+      "forward_euler_run_duration_seconds": 54.83820480015129,
+      "raw_data": "c5_independent_raw.npz"
+    }
+  },
+  "gate_decision": "EVIDENCE_ONLY_NO_FORMAL_C5_DECISION",
+  "review_baseline": "02687c694b1e72f30534b2118becfc457bcb48be",
+  "historical_numerical_baseline": "912c0e46e8d00dc285c34258b1113f3a8ea61042",
+  "total_duration_seconds": 100.6342505000066,
+  "raw_data_sha256": {
+    "c5_independent_raw.npz": "49d4ead724d21a570caf3ee8fd6be6e9b82e630eaf28457831624b672221ed44"
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "task": "PU-001B-R1 potential implementation equivalence",
+  "old_commit": "ed4faad4bd571f2a5ba8c7fabe2a45961792d326",
+  "new_implementation_commit": "b219f95e8b55017f08e073f9981274e3834827e7",
+  "executed_against_commit": "8520100f0bd8ecf7a3ae811e5f3e720f5066206f",
+  "historical_source_command": "git show ed4faad4bd571f2a5ba8c7fabe2a45961792d326:particle_universe/potential.py",
+  "command": "python -m unittest discover -s tests -v",
+  "environment": {
+    "python": "3.12.5",
+    "numpy": "2.2.6",
+    "platform": "Windows-10-10.0.19045-SP0"
+  },
+  "comparison": {
+    "absolute_tolerance": 5e-12,
+    "relative_tolerance": 5e-14,
+    "rationale": "Mixed tolerance handles zero and near-zero components while allowing only float64 summation-order roundoff for the tested systems of at most 108 particles.",
+    "case_count": 15,
+    "two_body_distances": [
+      0.9,
+      1.122462048309373,
+      1.5,
+      2.0,
+      2.4,
+      2.4999999999999996,
+      2.5,
+      2.5000000000000004,
+      2.6
+    ],
+    "random_seeds": [0, 1, 7, 20261020],
+    "random_particle_count": 17,
+    "fcc_particle_count": 108,
+    "pbc_minimum_image_case": true,
+    "direct_and_periodic_overlap_rejection_cases": 2
+  },
+  "measured": {
+    "maximum_absolute_force_component_difference": 8.149072527885437e-10,
+    "maximum_absolute_energy_difference": 4.661160346586257e-12,
+    "maximum_new_total_force_norm": 3.336437816093669e-14,
+    "all_interacting_pair_counts_equal": true,
+    "all_mixed_tolerance_comparisons_satisfied": true,
+    "exact_cutoff_force_zero": true,
+    "exact_cutoff_energy_zero": true,
+    "both_overlap_rejection_behaviors_preserved": true
+  },
+  "interpretation": "The largest absolute force difference occurs in a deliberately close PBC pair with a very large force magnitude and satisfies the relative term of the predeclared mixed tolerance. Near-zero comparisons use the absolute term.",
+  "outcome": "EQUIVALENT_WITHIN_TOLERANCE"
+}
