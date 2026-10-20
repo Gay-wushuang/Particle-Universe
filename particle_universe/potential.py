@@ -37,6 +37,7 @@ class ShiftedLennardJones:
             4.0 * EPSILON * (inverse_cutoff_6**2 - inverse_cutoff_6)
         )
         self._cutoff_squared = np.float64(CUTOFF * CUTOFF)
+        self._all_pair_indices: dict[int, tuple[np.ndarray, np.ndarray]] = {}
 
     @property
     def cutoff_energy(self) -> np.float64:
@@ -77,25 +78,40 @@ class ShiftedLennardJones:
             positions, "positions", minimum_particles=2, copy=False
         )
         forces = np.zeros_like(coordinates, dtype=np.float64)
-        potential_energy = np.float64(0.0)
-        interacting_pairs = 0
+        first, second = self._pair_indices(coordinates.shape[0])
+        displacements = boundary.displacement(
+            coordinates[first] - coordinates[second]
+        )
+        radius_squared = np.einsum(
+            "ij,ij->i", displacements, displacements, dtype=np.float64
+        )
+        overlaps = np.flatnonzero(radius_squared == 0.0)
+        if overlaps.size:
+            pair = int(overlaps[0])
+            raise ParticleOverlapError(
+                f"particles {int(first[pair])} and {int(second[pair])} overlap "
+                "under the selected boundary"
+            )
 
-        for i in range(coordinates.shape[0] - 1):
-            for j in range(i + 1, coordinates.shape[0]):
-                displacement = boundary.displacement(coordinates[i] - coordinates[j])
-                radius_squared = np.float64(np.dot(displacement, displacement))
-                if radius_squared == 0.0:
-                    raise ParticleOverlapError(
-                        f"particles {i} and {j} overlap under the selected boundary"
-                    )
-                if radius_squared >= self._cutoff_squared:
-                    continue
-                pair_force = self._force_inside_cutoff(displacement, radius_squared)
-                pair_energy = self._energy_inside_cutoff(radius_squared)
-                forces[i] += pair_force
-                forces[j] -= pair_force
-                potential_energy += pair_energy
-                interacting_pairs += 1
+        active = radius_squared < self._cutoff_squared
+        active_first = first[active]
+        active_second = second[active]
+        active_displacements = displacements[active]
+        active_radius_squared = radius_squared[active]
+        interacting_pairs = int(np.count_nonzero(active))
+
+        if interacting_pairs:
+            pair_forces = self._force_inside_cutoff(
+                active_displacements, active_radius_squared
+            )
+            pair_energies = self._energy_inside_cutoff(active_radius_squared)
+            np.add.at(forces, active_first, pair_forces)
+            np.add.at(forces, active_second, -pair_forces)
+            potential_energy = np.float64(
+                np.sum(pair_energies, dtype=np.float64)
+            )
+        else:
+            potential_energy = np.float64(0.0)
 
         finite_result(forces, "forces")
         finite_result(potential_energy, "potential energy")
@@ -105,7 +121,15 @@ class ShiftedLennardJones:
             interacting_pairs=interacting_pairs,
         )
 
-    def _energy_inside_cutoff(self, radius_squared: np.float64) -> np.float64:
+    def _pair_indices(self, particle_count: int) -> tuple[np.ndarray, np.ndarray]:
+        indices = self._all_pair_indices.get(particle_count)
+        if indices is None:
+            # This is the complete O(N^2) pair set, not a cutoff neighbor list.
+            indices = np.triu_indices(particle_count, k=1)
+            self._all_pair_indices[particle_count] = indices
+        return indices
+
+    def _energy_inside_cutoff(self, radius_squared: np.ndarray) -> np.ndarray:
         try:
             with np.errstate(divide="raise", over="raise", invalid="raise"):
                 inverse_radius_2 = np.float64(1.0) / radius_squared
@@ -118,10 +142,10 @@ class ShiftedLennardJones:
                 "Lennard-Jones energy is numerically singular at this separation"
             ) from exc
         finite_result(energy, "pair potential energy")
-        return np.float64(energy)
+        return np.asarray(energy, dtype=np.float64)
 
     def _force_inside_cutoff(
-        self, displacement: np.ndarray, radius_squared: np.float64
+        self, displacement: np.ndarray, radius_squared: np.ndarray | np.float64
     ) -> np.ndarray:
         try:
             with np.errstate(divide="raise", over="raise", invalid="raise"):
@@ -133,7 +157,7 @@ class ShiftedLennardJones:
                     * (2.0 * inverse_radius_6**2 - inverse_radius_6)
                     * inverse_radius_2
                 )
-                force = coefficient * displacement
+                force = coefficient[..., np.newaxis] * displacement
         except FloatingPointError as exc:
             raise FloatingPointError(
                 "Lennard-Jones force is numerically singular at this separation"
